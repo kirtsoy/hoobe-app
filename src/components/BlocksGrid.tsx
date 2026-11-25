@@ -14,9 +14,12 @@ interface BlocksGridProps {
 }
 
 export const BlocksGrid: React.FC<BlocksGridProps> = ({ blocks }) => {
+  const visibleBlocks = blocks.filter((block) => !block.hidden);
+  if (visibleBlocks.length === 0) return null;
+
   return (
     <div className="w-full px-4 py-2 flex flex-col gap-4">
-      {blocks.map((block) => {
+      {visibleBlocks.map((block) => {
         if (block.type === 'section_title') {
           return <SectionTitle key={block.id} title={block.title} />;
         }

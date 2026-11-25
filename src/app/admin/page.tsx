@@ -17,6 +17,7 @@ import {
   Image as ImageIcon,
   CheckCircle,
   Eye,
+  EyeOff,
   Plus,
   Trash2,
   Video,
@@ -429,6 +430,13 @@ export default function AdminPage() {
     setProfile(prev => ({
       ...prev,
       blocks: prev.blocks.filter((_, i) => i !== index)
+    }));
+  };
+
+  const toggleBlockVisibility = (index: number) => {
+    setProfile(prev => ({
+      ...prev,
+      blocks: prev.blocks.map((b, i) => (i === index ? { ...b, hidden: !b.hidden } : b)),
     }));
   };
 
@@ -1688,11 +1696,25 @@ export default function AdminPage() {
             {/* Список блоков */}
             <div className="flex flex-col gap-3 pt-2">
               {profile.blocks.map((block, idx) => (
-                <div key={block.id} className="p-3.5 bg-neutral-800/80 border border-neutral-700/70 rounded-xl flex flex-col gap-2.5">
+                <div
+                  key={block.id}
+                  className={`p-3.5 rounded-xl border flex flex-col gap-2.5 transition-all ${
+                    block.hidden
+                      ? 'bg-neutral-900/50 border-neutral-800/70 opacity-60'
+                      : 'bg-neutral-800/80 border-neutral-700/70'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-xs text-sky-300">
-                      #{idx + 1} {block.type}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-xs text-sky-300">
+                        #{idx + 1} {block.type}
+                      </span>
+                      {block.hidden && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 font-medium">
+                          Скрыт
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => moveBlock(idx, 'up')}
@@ -1709,6 +1731,18 @@ export default function AdminPage() {
                         title="Опустить блок ниже"
                       >
                         <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleBlockVisibility(idx)}
+                        className={`p-1 rounded transition-colors cursor-pointer ${
+                          block.hidden
+                            ? 'text-amber-400 hover:text-emerald-400 bg-amber-500/10'
+                            : 'text-neutral-400 hover:text-amber-300'
+                        }`}
+                        title={block.hidden ? 'Показать блок на витрине' : 'Скрыть блок (останется в списке)'}
+                      >
+                        {block.hidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                       <button
                         onClick={() => removeBlock(idx)}

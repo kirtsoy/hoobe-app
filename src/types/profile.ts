@@ -59,6 +59,7 @@ export interface BaseBlock {
   type: BlockType;
   gridColumn?: 'full' | 'left' | 'right';
   gridRowSpan?: number;
+  hidden?: boolean;
 }
 
 export interface ImageLinkBlockData extends BaseBlock {
