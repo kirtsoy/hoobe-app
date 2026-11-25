@@ -107,10 +107,11 @@ export type ContentBlock =
 
 export interface AvatarSettings {
   size: number;
-  shape: 'circle' | 'squircle' | 'rounded' | 'square';
+  shape: 'circle' | 'squircle' | 'rounded' | 'square' | 'cutout';
   zoom: number;
   offsetX: number;
   offsetY: number;
+  cutoutOffsetY?: number; // Вертикальное наложение вырезанной PNG-аватарки на баннер/лого (в px)
   borderWidth: number;
   borderColor: string;
   hasGlow: boolean;

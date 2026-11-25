@@ -4,7 +4,7 @@ export const myProfile: ProfileData = {
   "username": "kirtsoy",
   "displayName": "",
   "bio": "artist | streamer | vlogger",
-  "avatarUrl": "/uploads/1791799157119-lsn6lh.jpg",
+  "avatarUrl": "/uploads/kirtsoy_avatar_cutout.png",
   "isVerified": false,
   "theme": {
     "primaryBg": "#0f172a",
@@ -285,14 +285,15 @@ export const myProfile: ProfileData = {
     }
   ],
   "avatarConfig": {
-    "size": 100,
-    "shape": "circle",
-    "zoom": 1.3,
-    "offsetX": 5,
-    "offsetY": 12,
+    "size": 165,
+    "shape": "cutout",
+    "zoom": 1,
+    "offsetX": 0,
+    "offsetY": 0,
+    "cutoutOffsetY": -95,
     "borderWidth": 2,
     "borderColor": "#100e33",
-    "hasGlow": true,
+    "hasGlow": false,
     "glowColor": "#100e33"
   },
   "bannerConfig": {

@@ -109,7 +109,7 @@ export const SocialIconsBar: React.FC<SocialIconsBarProps> = ({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              title={item.title}
+              aria-label={item.title}
               style={variantConfig.style}
               className={variantConfig.className}
             >
@@ -122,11 +122,6 @@ export const SocialIconsBar: React.FC<SocialIconsBarProps> = ({
                   mode={variantConfig.mode}
                   className="w-full h-full drop-shadow-sm"
                 />
-              </span>
-
-              {/* Тонкий тултип при наведении */}
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none bg-black/90 text-white text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap z-30 shadow-xl">
-                {item.title}
               </span>
             </a>
           );

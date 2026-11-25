@@ -68,6 +68,7 @@ export const ProfileShell: React.FC<ProfileShellProps> = ({
   const borderRadius = getRadius();
   const hasBanner = banner.enabled && !!banner.imageUrl;
   const shouldOverlap = hasBanner && (banner.avatarOverlap ?? true);
+  const isCutout = config.shape === 'cutout';
 
   return (
     <div className="relative z-10 w-full flex flex-col items-center">
@@ -111,56 +112,82 @@ export const ProfileShell: React.FC<ProfileShellProps> = ({
 
       {/* КОНТЕНТ ПРОФИЛЯ (АВАТАР, ИМЯ, СТАТУС) */}
       <div 
-        className={`relative z-10 w-full px-6 pb-2 text-center flex flex-col items-center transition-all duration-300 ${
-          hasBanner ? (shouldOverlap ? '-mt-[52px]' : 'pt-3') : 'pt-8'
+        className={`relative z-20 w-full px-6 pb-2 text-center flex flex-col items-center transition-all duration-300 ${
+          hasBanner ? (isCutout ? 'pt-0' : (shouldOverlap ? '-mt-[52px]' : 'pt-3')) : 'pt-8'
         }`}
       >
-        {/* Контейнер аватара с динамическим размером и свечением */}
-        <div 
-          className="relative mb-3 transition-all duration-300 shadow-2xl"
-          style={{
-            width: `${config.size}px`,
-            height: `${config.size}px`,
-            filter: config.hasGlow ? `drop-shadow(0 0 18px ${config.glowColor})` : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
-          }}
-        >
-          <div 
-            className="w-full h-full overflow-hidden p-0.5 transition-all duration-300 bg-black/40 backdrop-blur-sm"
+        {isCutout ? (
+          /* ВЫРЕЗАННАЯ ПРОЗРАЧНАЯ PNG-АВАТАРКА (ОРГАНИЧНОЕ НАЛОЖЕНИЕ НА ЛОГО) */
+          <div
+            className="relative z-20 mb-2 flex items-center justify-center transition-all duration-200 select-none"
             style={{
-              borderRadius: borderRadius,
-              border: `${Math.max(2, config.borderWidth)}px solid ${config.borderColor || 'rgba(255,255,255,0.2)'}`,
+              height: `${config.size}px`,
+              marginTop: `${config.cutoutOffsetY ?? -95}px`,
+              filter: config.hasGlow
+                ? `drop-shadow(0 0 18px ${config.glowColor})`
+                : 'drop-shadow(0 10px 22px rgba(0,0,0,0.55))',
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatarUrl}
+              alt={displayName || 'Avatar'}
+              className="h-full w-auto max-w-none object-contain"
+            />
+            {isVerified && (
+              <div className="absolute -right-2 bottom-2 z-30 pointer-events-none">
+                <VerifiedBadge size={Math.max(20, Math.round(config.size * 0.16))} />
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Контейнер аватара с динамическим размером и свечением */
+          <div 
+            className="relative mb-3 transition-all duration-300 shadow-2xl"
+            style={{
+              width: `${config.size}px`,
+              height: `${config.size}px`,
+              filter: config.hasGlow ? `drop-shadow(0 0 18px ${config.glowColor})` : 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))',
             }}
           >
             <div 
-              className="w-full h-full overflow-hidden bg-black/20"
-              style={{ borderRadius: borderRadius }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={avatarUrl}
-                alt={displayName}
-                className="w-full h-full object-cover transition-transform duration-150"
-                style={{
-                  transform: `scale(${config.zoom}) translate(${config.offsetX}%, ${config.offsetY}%)`,
-                  transformOrigin: 'center center',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Синий бейдж верификации */}
-          {isVerified && (
-            <div 
-              className="absolute z-20 pointer-events-none transition-all duration-300"
+              className="w-full h-full overflow-hidden p-0.5 transition-all duration-300 bg-black/40 backdrop-blur-sm"
               style={{
-                right: config.shape === 'circle' ? '4px' : '-4px',
-                bottom: config.shape === 'circle' ? '4px' : '-4px',
+                borderRadius: borderRadius,
+                border: `${Math.max(2, config.borderWidth)}px solid ${config.borderColor || 'rgba(255,255,255,0.2)'}`,
               }}
             >
-              <VerifiedBadge size={Math.max(20, Math.round(config.size * 0.2))} />
+              <div 
+                className="w-full h-full overflow-hidden bg-black/20"
+                style={{ borderRadius: borderRadius }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="w-full h-full object-cover transition-transform duration-150"
+                  style={{
+                    transform: `scale(${config.zoom}) translate(${config.offsetX}%, ${config.offsetY}%)`,
+                    transformOrigin: 'center center',
+                  }}
+                />
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Синий бейдж верификации */}
+            {isVerified && (
+              <div 
+                className="absolute z-20 pointer-events-none transition-all duration-300"
+                style={{
+                  right: config.shape === 'circle' ? '4px' : '-4px',
+                  bottom: config.shape === 'circle' ? '4px' : '-4px',
+                }}
+              >
+                <VerifiedBadge size={Math.max(20, Math.round(config.size * 0.2))} />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Имя и статус */}
         <div className="relative z-10 w-full flex flex-col items-center">

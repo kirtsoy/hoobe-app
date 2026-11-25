@@ -1053,17 +1053,25 @@ export default function AdminPage() {
             {/* Выбор картинки */}
             <div className="flex items-center gap-4">
               <div 
-                className="w-16 h-16 overflow-hidden border-2 border-neutral-700 bg-neutral-800 shrink-0"
+                className={`w-16 h-16 overflow-hidden bg-neutral-800 shrink-0 flex items-center justify-center ${
+                  avatarConf.shape === 'cutout' ? 'border border-dashed border-sky-500/60 rounded-xl' : 'border-2 border-neutral-700'
+                }`}
                 style={{
-                  borderRadius: avatarConf.shape === 'circle' ? '50%' : avatarConf.shape === 'squircle' ? '30%' : '12px'
+                  borderRadius: avatarConf.shape === 'cutout'
+                    ? '12px'
+                    : avatarConf.shape === 'circle'
+                    ? '50%'
+                    : avatarConf.shape === 'squircle'
+                    ? '30%'
+                    : '12px'
                 }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={profile.avatarUrl} 
                   alt="Avatar" 
-                  className="w-full h-full object-cover"
-                  style={{
+                  className={avatarConf.shape === 'cutout' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
+                  style={avatarConf.shape === 'cutout' ? undefined : {
                     transform: `scale(${avatarConf.zoom}) translate(${avatarConf.offsetX}%, ${avatarConf.offsetY}%)`
                   }}
                 />
@@ -1081,103 +1089,186 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => avatarInputRef.current?.click()}
                   disabled={uploading}
-                  className="w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-xl font-medium flex items-center justify-center gap-2 text-xs text-white"
+                  className="w-full py-2 px-3 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-xl font-medium flex items-center justify-center gap-2 text-xs text-white cursor-pointer"
                 >
                   <Upload className="w-4 h-4 text-sky-400" />
-                  {uploading ? 'Загрузка...' : 'Загрузить новое фото с ПК'}
+                  {uploading ? 'Загрузка...' : 'Загрузить фото / PNG с ПК'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleUpdate('avatarUrl', '/uploads/kirtsoy_avatar_cutout.png');
+                    handleAvatarConfig('shape', 'cutout');
+                    if (avatarConf.size < 130) handleAvatarConfig('size', 165);
+                    if (avatarConf.cutoutOffsetY === undefined) handleAvatarConfig('cutoutOffsetY', -95);
+                  }}
+                  className="w-full py-1.5 px-3 bg-sky-950/60 hover:bg-sky-900/60 border border-sky-700/50 rounded-xl font-medium flex items-center justify-center gap-1.5 text-[11px] text-sky-300 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                  Вставить вырезанную PNG-аватарку
                 </button>
               </div>
             </div>
 
             {/* Форма аватара */}
             <div>
-              <label className="text-neutral-400 block mb-1 text-xs">Форма аватара</label>
-              <div className="grid grid-cols-4 gap-1.5 text-xs">
-                {(['circle', 'squircle', 'rounded', 'square'] as const).map(shape => (
+              <label className="text-neutral-400 block mb-1 text-xs">Форма / Режим аватара</label>
+              <div className="grid grid-cols-5 gap-1.5 text-[11px]">
+                {(['circle', 'squircle', 'rounded', 'square', 'cutout'] as const).map(shape => (
                   <button
                     key={shape}
                     type="button"
-                    onClick={() => handleAvatarConfig('shape', shape)}
-                    className={`py-1.5 rounded-lg border text-center capitalize transition-colors ${
+                    onClick={() => {
+                      handleAvatarConfig('shape', shape);
+                      if (shape === 'cutout') {
+                        if (avatarConf.size < 130) handleAvatarConfig('size', 165);
+                        if (avatarConf.cutoutOffsetY === undefined) handleAvatarConfig('cutoutOffsetY', -95);
+                      }
+                    }}
+                    className={`py-1.5 px-1 rounded-lg border text-center transition-colors cursor-pointer ${
                       avatarConf.shape === shape 
                         ? 'bg-sky-600 border-sky-400 text-white font-semibold' 
                         : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700'
                     }`}
                   >
-                    {shape === 'circle' ? 'Круг' : shape === 'squircle' ? 'Сквиркл' : shape === 'rounded' ? 'Скругл.' : 'Квадрат'}
+                    {shape === 'circle'
+                      ? 'Круг'
+                      : shape === 'squircle'
+                      ? 'Сквиркл'
+                      : shape === 'rounded'
+                      ? 'Скругл.'
+                      : shape === 'square'
+                      ? 'Квадрат'
+                      : '✨ Вырез'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Ползунок Масштаба (Zoom) */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-neutral-400">Приближение (Zoom):</span>
-                <span className="text-sky-400 font-mono">{avatarConf.zoom.toFixed(2)}x</span>
-              </div>
-              <input
-                type="range"
-                min="0.8"
-                max="3"
-                step="0.05"
-                value={avatarConf.zoom}
-                onChange={(e) => handleAvatarConfig('zoom', parseFloat(e.target.value))}
-                className="w-full accent-sky-500 cursor-pointer"
-              />
-            </div>
-
-            {/* Смещение по горизонтали и вертикали */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-neutral-400">Сдвиг X:</span>
-                  <span className="text-sky-400 font-mono">{avatarConf.offsetX}%</span>
+            {avatarConf.shape === 'cutout' ? (
+              <div className="flex flex-col gap-3 p-3.5 bg-neutral-950/80 border border-sky-900/50 rounded-xl">
+                {/* Размер вырезанной аватарки */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-300 font-medium">Размер вырезанной аватарки:</span>
+                    <span className="text-sky-400 font-mono font-semibold">{avatarConf.size} px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="64"
+                    max="340"
+                    step="2"
+                    value={avatarConf.size}
+                    onChange={(e) => handleAvatarConfig('size', parseInt(e.target.value))}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="range"
-                  min="-40"
-                  max="40"
-                  step="1"
-                  value={avatarConf.offsetX}
-                  onChange={(e) => handleAvatarConfig('offsetX', parseInt(e.target.value))}
-                  className="w-full accent-sky-500 cursor-pointer"
-                />
-              </div>
 
-              <div>
-                <div className="flex justify-between mb-1">
-                  <span className="text-neutral-400">Сдвиг Y:</span>
-                  <span className="text-sky-400 font-mono">{avatarConf.offsetY}%</span>
+                {/* Вертикальное наложение на логотип (вверх / вниз) */}
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-neutral-300 font-medium">Двигать вверх / вниз (наложение на лого):</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sky-400 font-mono font-semibold">
+                        {avatarConf.cutoutOffsetY ?? -95} px
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleAvatarConfig('cutoutOffsetY', -95)}
+                        className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 cursor-pointer"
+                        title="Сбросить позицию по умолчанию"
+                      >
+                        Сброс
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="-220"
+                    max="60"
+                    step="2"
+                    value={avatarConf.cutoutOffsetY ?? -95}
+                    onChange={(e) => handleAvatarConfig('cutoutOffsetY', parseInt(e.target.value))}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-neutral-500 mt-0.5">
+                    <span>▲ Выше на лого (-220px)</span>
+                    <span>▼ Ниже (+60px)</span>
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="-40"
-                  max="40"
-                  step="1"
-                  value={avatarConf.offsetY}
-                  onChange={(e) => handleAvatarConfig('offsetY', parseInt(e.target.value))}
-                  className="w-full accent-sky-500 cursor-pointer"
-                />
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Ползунок Масштаба (Zoom) */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Приближение (Zoom):</span>
+                    <span className="text-sky-400 font-mono">{avatarConf.zoom.toFixed(2)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.8"
+                    max="3"
+                    step="0.05"
+                    value={avatarConf.zoom}
+                    onChange={(e) => handleAvatarConfig('zoom', parseFloat(e.target.value))}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
+                </div>
 
-            {/* Размер кружка аватара */}
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-neutral-400">Размер аватара:</span>
-                <span className="text-sky-400 font-mono">{avatarConf.size}px</span>
-              </div>
-              <input
-                type="range"
-                min="90"
-                max="180"
-                step="2"
-                value={avatarConf.size}
-                onChange={(e) => handleAvatarConfig('size', parseInt(e.target.value))}
-                className="w-full accent-sky-500 cursor-pointer"
-              />
-            </div>
+                {/* Смещение по горизонтали и вертикали */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-neutral-400">Сдвиг X:</span>
+                      <span className="text-sky-400 font-mono">{avatarConf.offsetX}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-40"
+                      max="40"
+                      step="1"
+                      value={avatarConf.offsetX}
+                      onChange={(e) => handleAvatarConfig('offsetX', parseInt(e.target.value))}
+                      className="w-full accent-sky-500 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-neutral-400">Сдвиг Y:</span>
+                      <span className="text-sky-400 font-mono">{avatarConf.offsetY}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-40"
+                      max="40"
+                      step="1"
+                      value={avatarConf.offsetY}
+                      onChange={(e) => handleAvatarConfig('offsetY', parseInt(e.target.value))}
+                      className="w-full accent-sky-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Размер кружка аватара */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-neutral-400">Размер аватара:</span>
+                    <span className="text-sky-400 font-mono">{avatarConf.size}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="90"
+                    max="180"
+                    step="2"
+                    value={avatarConf.size}
+                    onChange={(e) => handleAvatarConfig('size', parseInt(e.target.value))}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
+                </div>
+              </>
+            )}
 
             {/* Обводка и Свечение */}
             <div className="flex items-center justify-between pt-2 border-t border-neutral-800 text-xs">
