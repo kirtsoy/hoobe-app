@@ -69,6 +69,8 @@ export const ProfileShell: React.FC<ProfileShellProps> = ({
   const hasBanner = banner.enabled && !!banner.imageUrl;
   const shouldOverlap = hasBanner && (banner.avatarOverlap ?? true);
   const isCutout = config.shape === 'cutout';
+  const cropBottom = Math.min(70, Math.max(0, config.cutoutCropBottom ?? 0));
+  const cutoutVisibleHeight = Math.round(config.size * (1 - cropBottom / 100));
 
   return (
     <div className="relative z-10 w-full flex flex-col items-center">
@@ -119,21 +121,24 @@ export const ProfileShell: React.FC<ProfileShellProps> = ({
         {isCutout ? (
           /* ВЫРЕЗАННАЯ ПРОЗРАЧНАЯ PNG-АВАТАРКА (ОРГАНИЧНОЕ НАЛОЖЕНИЕ НА ЛОГО) */
           <div
-            className="relative z-20 mb-2 flex items-center justify-center transition-all duration-200 select-none"
+            className="relative z-20 mb-2 flex items-start justify-center transition-all duration-200 select-none"
             style={{
-              height: `${config.size}px`,
+              height: `${cutoutVisibleHeight}px`,
               marginTop: `${config.cutoutOffsetY ?? -95}px`,
               filter: config.hasGlow
                 ? `drop-shadow(0 0 18px ${config.glowColor})`
                 : 'drop-shadow(0 10px 22px rgba(0,0,0,0.55))',
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={avatarUrl}
-              alt={displayName || 'Avatar'}
-              className="h-full w-auto max-w-none object-contain"
-            />
+            <div className="h-full overflow-hidden flex items-start justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl}
+                alt={displayName || 'Avatar'}
+                className="w-auto max-w-none object-contain shrink-0"
+                style={{ height: `${config.size}px` }}
+              />
+            </div>
             {isVerified && (
               <div className="absolute -right-2 bottom-2 z-30 pointer-events-none">
                 <VerifiedBadge size={Math.max(20, Math.round(config.size * 0.16))} />

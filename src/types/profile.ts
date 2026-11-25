@@ -112,6 +112,7 @@ export interface AvatarSettings {
   offsetX: number;
   offsetY: number;
   cutoutOffsetY?: number; // Вертикальное наложение вырезанной PNG-аватарки на баннер/лого (в px)
+  cutoutCropBottom?: number; // Обрезка вырезанной аватарки снизу в % (0 - 65)
   borderWidth: number;
   borderColor: string;
   hasGlow: boolean;

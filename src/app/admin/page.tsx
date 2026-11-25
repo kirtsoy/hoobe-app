@@ -1196,6 +1196,37 @@ export default function AdminPage() {
                     <span>▼ Ниже (+60px)</span>
                   </div>
                 </div>
+
+                {/* Обрезка снизу (Crop Bottom) */}
+                <div>
+                  <div className="flex justify-between items-center text-xs mb-1">
+                    <span className="text-neutral-300 font-medium">Обрезать снизу (Crop Bottom):</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sky-400 font-mono font-semibold">
+                        {avatarConf.cutoutCropBottom ?? 0}%
+                      </span>
+                      {(avatarConf.cutoutCropBottom ?? 0) > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleAvatarConfig('cutoutCropBottom', 0)}
+                          className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 cursor-pointer"
+                          title="Убрать обрезку"
+                        >
+                          Сброс
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="65"
+                    step="1"
+                    value={avatarConf.cutoutCropBottom ?? 0}
+                    onChange={(e) => handleAvatarConfig('cutoutCropBottom', parseInt(e.target.value))}
+                    className="w-full accent-sky-500 cursor-pointer"
+                  />
+                </div>
               </div>
             ) : (
               <>
