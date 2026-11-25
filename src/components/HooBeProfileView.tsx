@@ -30,7 +30,7 @@ export const HooBeProfileView: React.FC<HooBeProfileViewProps> = ({ profile, isP
     >
       {/* Фоновый живой шейдер 06 Universe на весь экран (на главной витрине) */}
       {!isPreview && showUniverse && (
-        <UniverseGradient className="fixed inset-0 z-0 opacity-100 pointer-events-none" />
+        <UniverseGradient className="fixed inset-0 z-0 opacity-100" />
       )}
 
       {/* Мобильная подложка */}

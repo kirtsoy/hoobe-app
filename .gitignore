@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+*.db
+crop_*.png
+read_history.py
+scripts/temp_*
+
 
 # debug
 npm-debug.log*

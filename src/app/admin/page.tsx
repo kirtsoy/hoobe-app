@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ProfileData, ContentBlock, SocialLink, AvatarSettings, BannerSettings } from '@/types/profile';
+import { ProfilePreset } from '@/types/presets';
 import { myProfile } from '@/data/myProfile';
 import { HooBeProfileView } from '@/components/HooBeProfileView';
 import { UniverseGradient } from '@/components/UniverseGradient';
@@ -29,7 +30,13 @@ import {
   ArrowUp,
   ArrowDown,
   Type,
-  Flag
+  Flag,
+  Download,
+  Check,
+  X,
+  Bookmark,
+  Palette,
+  Layers
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -117,6 +124,174 @@ export default function AdminPage() {
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // 💎 УПРАВЛЕНИЕ ПРЕСЕТАМИ (PRESET MANAGEMENT)
+  const [presets, setPresets] = useState<ProfilePreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('preset_kirtsoy_official');
+  const [loadingPresets, setLoadingPresets] = useState<boolean>(true);
+  const [showSavePresetModal, setShowSavePresetModal] = useState<boolean>(false);
+  const [newPresetName, setNewPresetName] = useState<string>('');
+  const [newPresetDesc, setNewPresetDesc] = useState<string>('');
+  const [newPresetBadge, setNewPresetBadge] = useState<string>('CUSTOM');
+  const [presetNotice, setPresetNotice] = useState<string | null>(null);
+  const fileImportRef = useRef<HTMLInputElement>(null);
+
+  // Загрузка пресетов с сервера
+  const fetchPresets = async () => {
+    try {
+      setLoadingPresets(true);
+      const res = await fetch('/api/presets');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.presets)) {
+        setPresets(data.presets);
+      }
+    } catch (e) {
+      console.error('Failed to load presets:', e);
+    } finally {
+      setLoadingPresets(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresets();
+  }, []);
+
+  const handleApplyPreset = (p: ProfilePreset) => {
+    setProfile(JSON.parse(JSON.stringify(p.profile)));
+    setSelectedPresetId(p.id);
+    setPresetNotice(`Пресет "${p.name}" успешно применен!`);
+    setTimeout(() => setPresetNotice(null), 3500);
+  };
+
+  const handleSaveNewPreset = async () => {
+    if (!newPresetName.trim()) {
+      alert('Пожалуйста, введите название пресета');
+      return;
+    }
+    try {
+      const res = await fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save',
+          name: newPresetName.trim(),
+          description: newPresetDesc.trim() || undefined,
+          badge: newPresetBadge.trim().toUpperCase() || 'CUSTOM',
+          profile: profile,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPresets(data.presets);
+        setSelectedPresetId(data.preset.id);
+        setShowSavePresetModal(false);
+        setNewPresetName('');
+        setNewPresetDesc('');
+        setPresetNotice(`Пресет "${data.preset.name}" успешно сохранен!`);
+        setTimeout(() => setPresetNotice(null), 3500);
+      } else {
+        alert('Ошибка при сохранении пресета: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Ошибка соединения: ' + err.message);
+    }
+  };
+
+  const handleUpdateCurrentPreset = async () => {
+    const cur = presets.find(p => p.id === selectedPresetId);
+    if (!cur) return;
+    if (cur.isSystem) {
+      alert('Системные пресеты защищены от перезаписи. Сохраните как новый кастомный пресет!');
+      setShowSavePresetModal(true);
+      setNewPresetName(cur.name + ' (Копия)');
+      return;
+    }
+    try {
+      const res = await fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save',
+          id: cur.id,
+          name: cur.name,
+          description: cur.description,
+          badge: cur.badge,
+          profile: profile,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPresets(data.presets);
+        setPresetNotice(`Пресет "${cur.name}" обновлен текущими настройками!`);
+        setTimeout(() => setPresetNotice(null), 3500);
+      } else {
+        alert('Ошибка обновления: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Ошибка: ' + err.message);
+    }
+  };
+
+  const handleDeletePreset = async (id: string, name: string) => {
+    if (!confirm(`Удалить кастомный пресет "${name}"?`)) return;
+    try {
+      const res = await fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPresets(data.presets);
+        if (selectedPresetId === id) {
+          setSelectedPresetId(data.presets[0]?.id || '');
+        }
+        setPresetNotice(`Пресет "${name}" удален`);
+        setTimeout(() => setPresetNotice(null), 3500);
+      } else {
+        alert('Ошибка: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Ошибка: ' + err.message);
+    }
+  };
+
+  const handleExportPresets = () => {
+    const blob = new Blob([JSON.stringify(presets, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hoobe_presets_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportPresets = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const presetsArray = Array.isArray(parsed) ? parsed : [parsed];
+      const res = await fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'import', presets: presetsArray }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPresets(data.presets);
+        setPresetNotice(`Успешно импортировано пресетов: ${presetsArray.length}`);
+        setTimeout(() => setPresetNotice(null), 3500);
+      } else {
+        alert('Ошибка импорта: ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Ошибка чтения файла: ' + err.message);
+    } finally {
+      if (fileImportRef.current) fileImportRef.current.value = '';
+    }
+  };
 
   const handleUpdate = (field: keyof ProfileData, val: any) => {
     setProfile(prev => ({ ...prev, [field]: val }));
@@ -424,6 +599,162 @@ export default function AdminPage() {
         </div>
 
         <div className="flex flex-col gap-6 text-sm">
+          {/* СЕКЦИЯ: ПРЕСЕТЫ ОФОРМЛЕНИЯ & ТЕМЫ (PRESET MANAGER) */}
+          <div className="bg-gradient-to-b from-neutral-900 to-neutral-950 p-5 rounded-2xl border border-sky-950/70 shadow-xl flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-neutral-100 flex items-center gap-2 text-sm">
+                    Пресеты оформления
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-mono border border-sky-500/30">
+                      {presets.length} стилей
+                    </span>
+                  </h2>
+                  <p className="text-[11px] text-neutral-400">Сохраняй и переключай визуальные стили в 1 клик</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewPresetName('');
+                    setNewPresetDesc('');
+                    setShowSavePresetModal(true);
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-medium bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
+                  title="Сохранить текущий вид как новый пресет"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Новый пресет
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportPresets}
+                  className="p-1.5 text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors cursor-pointer"
+                  title="Экспорт всех пресетов в JSON"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileImportRef.current?.click()}
+                  className="p-1.5 text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors cursor-pointer"
+                  title="Импорт пресетов из JSON"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                </button>
+                <input
+                  type="file"
+                  ref={fileImportRef}
+                  onChange={handleImportPresets}
+                  accept=".json"
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Всплывающее уведомление о пресете */}
+            {presetNotice && (
+              <div className="p-2.5 rounded-xl bg-sky-950/60 border border-sky-500/40 text-sky-200 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-sky-400 shrink-0" />
+                <span>{presetNotice}</span>
+              </div>
+            )}
+
+            {/* Быстрая витрина пресетов (Плитка карточек) */}
+            <div className="grid grid-cols-2 gap-2">
+              {presets.map((p) => {
+                const isSelected = selectedPresetId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={`relative p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between group ${
+                      isSelected
+                        ? 'bg-sky-950/40 border-sky-500/80 ring-1 ring-sky-500/50 shadow-md'
+                        : 'bg-neutral-900/80 hover:bg-neutral-800/90 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className={`text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                          p.badge === 'OFFICIAL' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
+                          p.badge === 'CYBER' ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30' :
+                          p.badge === 'MUSIC' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                          p.badge === 'BRUTAL' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' :
+                          'bg-neutral-700 text-neutral-300'
+                        }`}>
+                          {p.badge || (p.isSystem ? 'CORE' : 'CUSTOM')}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[10px] text-sky-400 flex items-center gap-0.5 font-medium">
+                            <Check className="w-3 h-3" /> Активен
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-medium text-xs text-neutral-200 leading-tight mb-1 truncate" title={p.name}>
+                        {p.name}
+                      </div>
+                      <div className="text-[10px] text-neutral-400 line-clamp-2 leading-relaxed">
+                        {p.description}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-1 mt-2.5 pt-2 border-t border-neutral-800/80">
+                      <button
+                        type="button"
+                        onClick={() => handleApplyPreset(p)}
+                        className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40'
+                            : 'bg-neutral-800 hover:bg-sky-600 hover:text-white text-neutral-300'
+                        }`}
+                      >
+                        {isSelected ? '✓ Выбран' : 'Применить'}
+                      </button>
+                      {!p.isSystem && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePreset(p.id, p.name)}
+                          className="p-1 text-neutral-500 hover:text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer"
+                          title="Удалить пресет"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Нижняя панель действий выбранного пресета */}
+            {selectedPresetId && (
+              <div className="flex items-center justify-between text-xs text-neutral-400 pt-1 border-t border-neutral-800/50">
+                <span className="truncate max-w-[260px]">
+                  Выбран: <strong className="text-neutral-200">{presets.find(p => p.id === selectedPresetId)?.name}</strong>
+                </span>
+                {(() => {
+                  const cur = presets.find(p => p.id === selectedPresetId);
+                  if (!cur || cur.isSystem) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleUpdateCurrentPreset}
+                      className="text-[11px] text-sky-400 hover:text-sky-300 flex items-center gap-1 cursor-pointer font-medium"
+                      title="Обновить этот пресет текущим состоянием редактора"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Перезаписать пресет
+                    </button>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+
           {/* СЕКЦИЯ: БАННЕР В ШАПКУ ПРОФИЛЯ (HEADER COVER) */}
           <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -1458,22 +1789,106 @@ export default function AdminPage() {
       </div>
 
       {/* ПРАВАЯ ПАНЕЛЬ: ЖИВОЙ ПРЕДПРОСМОТР */}
-      <div className="relative z-10 flex-1 h-screen max-h-screen bg-[#030014] overflow-hidden flex flex-col">
-        {/* Фоновый живой 3D-шейдер 06 Universe зафиксирован на всю правую панель */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-start p-4 lg:p-8 overflow-y-auto max-h-screen bg-[#030014] overflow-hidden">
+        {/* Фоновый живой 3D-шейдер 06 Universe на всю область предпросмотра */}
         {(profile.theme.useUniverseBackground ?? true) && (
-          <UniverseGradient className="absolute inset-0 z-0 opacity-100 pointer-events-none" />
+          <UniverseGradient className="absolute inset-0 z-0 opacity-100" />
         )}
-        
-        {/* Скроллируемый слой с карточкой профиля */}
-        <div className="relative z-10 w-full flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8">
-          <div className="text-xs text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 z-20 pointer-events-none">
-            <RefreshCw className="w-3.5 h-3.5 text-sky-400 animate-spin" /> Живой предпросмотр (Live Preview)
-          </div>
-          <div className="w-full max-w-[500px] relative z-10 rounded-[34px] shadow-2xl">
-            <HooBeProfileView profile={profile} isPreview={true} />
-          </div>
+        <div className="text-xs text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-1.5 z-20 pointer-events-none">
+          <RefreshCw className="w-3.5 h-3.5 text-sky-400 animate-spin" /> Живой предпросмотр (Live Preview)
+        </div>
+        <div className="w-full max-w-[500px] relative z-10 rounded-[34px] shadow-2xl">
+          <HooBeProfileView profile={profile} isPreview={true} />
         </div>
       </div>
+
+      {/* МОДАЛКА: СОХРАНИТЬ НОВЫЙ ПРЕСЕТ */}
+      {showSavePresetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#0f111f] border border-neutral-700/80 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-sky-400" />
+                Сохранить пресет оформления
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowSavePresetModal(false)}
+                className="p-1 text-neutral-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Текущие настройки темы, шрифты, аватар, баннер и оформление блоков будут сохранены под указанным именем в вашей библиотеке пресетов.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-xs text-neutral-300 block mb-1 font-medium">Название пресета *</label>
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="Например: Стрим-сетап Осень 2026"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-300 block mb-1 font-medium">Описание (опционально)</label>
+                <input
+                  type="text"
+                  value={newPresetDesc}
+                  onChange={(e) => setNewPresetDesc(e.target.value)}
+                  placeholder="Например: Темный фон, неоновый аватар, ссылки на стримы"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-300 block mb-1.5 font-medium">Метка / Бейдж</label>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {['CUSTOM', 'STREAM', 'VLOG', 'NIGHT', 'VIP', 'MINIMAL'].map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setNewPresetBadge(tag)}
+                      className={`text-[10px] font-mono px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+                        newPresetBadge === tag
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/60 ring-1 ring-sky-500/40'
+                          : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:border-neutral-700'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-800/80">
+              <button
+                type="button"
+                onClick={() => setShowSavePresetModal(false)}
+                className="px-4 py-2 rounded-xl text-xs text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 transition-colors cursor-pointer"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNewPreset}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-lg cursor-pointer flex items-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Сохранить пресет
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
