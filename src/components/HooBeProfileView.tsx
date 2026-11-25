@@ -67,7 +67,11 @@ export const HooBeProfileView: React.FC<HooBeProfileViewProps> = ({ profile, isP
         />
 
         {/* Social Links */}
-        <SocialIconsBar socials={profile.socials} iconStyle={profile.theme?.socialIconStyle || 'badges'} />
+        <SocialIconsBar
+          socials={profile.socials}
+          iconStyle={profile.theme?.socialIconStyle || 'badges'}
+          iconSize={profile.theme?.socialIconSize ?? 40}
+        />
 
         {/* Dynamic Blocks Grid */}
         <BlocksGrid blocks={profile.blocks} />

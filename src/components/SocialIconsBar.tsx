@@ -5,6 +5,7 @@ import { BrandIcon, getBrandStyle } from './BrandIcons';
 interface SocialIconsBarProps {
   socials: SocialLink[];
   iconStyle?: SocialIconStyle;
+  iconSize?: number;
 }
 
 export const detectCategory = (item: SocialLink): SocialCategory => {
@@ -42,9 +43,21 @@ export const detectCategory = (item: SocialLink): SocialCategory => {
 
 export const SocialIconsBar: React.FC<SocialIconsBarProps> = ({ 
   socials, 
-  iconStyle = 'badges' 
+  iconStyle = 'badges',
+  iconSize = 40,
 }) => {
   if (!socials || socials.length === 0) return null;
+
+  const clampedSize = Math.min(72, Math.max(24, iconSize));
+  const glyphSize = Math.round(clampedSize * 0.55);
+  const circleStyle: React.CSSProperties = {
+    width: `${clampedSize}px`,
+    height: `${clampedSize}px`,
+  };
+  const glyphWrapperStyle: React.CSSProperties = {
+    width: `${glyphSize}px`,
+    height: `${glyphSize}px`,
+  };
 
   // Разделение на 3 ряда
   const socialLinks = socials.filter(s => detectCategory(s) === 'social');
@@ -62,64 +75,34 @@ export const SocialIconsBar: React.FC<SocialIconsBarProps> = ({
         {items.map((item) => {
           const brand = getBrandStyle(item.platform);
 
-          if (iconStyle === 'badges') {
-            // 🎨 100% официальные цветные бейджи брендов
-            return (
-              <a
-                key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={item.title}
-                style={{
-                  background: brand.badgeBg,
-                  boxShadow: `0 4px 14px -2px ${brand.glowColor}`,
-                }}
-                className={`w-10 h-10 rounded-full ${brand.badgeText} ${brand.border || ''} transition-all duration-200 flex items-center justify-center relative shadow-lg hover:scale-115 hover:-translate-y-0.5 active:scale-95 group`}
-              >
-                <BrandIcon 
-                  platform={item.platform} 
-                  mode="badge" 
-                  className="w-[22px] h-[22px] transition-transform duration-200 group-hover:scale-110 drop-shadow-sm" 
-                />
-                
-                {/* Тонкий тултип при наведении */}
-                <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none bg-black/90 text-white text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap z-30 shadow-xl">
-                  {item.title}
-                </span>
-              </a>
-            );
-          }
+          const variantConfig =
+            iconStyle === 'badges'
+              ? {
+                  mode: 'badge' as const,
+                  className: `rounded-full ${brand.badgeText} ${brand.border || ''} transition-all duration-200 flex items-center justify-center relative shadow-lg hover:scale-115 hover:-translate-y-0.5 active:scale-95 group`,
+                  style: {
+                    ...circleStyle,
+                    background: brand.badgeBg,
+                    boxShadow: `0 4px 14px -2px ${brand.glowColor}`,
+                  },
+                }
+              : iconStyle === 'colored_icons'
+              ? {
+                  mode: 'colored' as const,
+                  className:
+                    'rounded-full bg-white/[0.08] hover:bg-white/[0.18] border border-white/[0.12] hover:border-white/35 backdrop-blur-md transition-all duration-200 flex items-center justify-center relative shadow-md hover:scale-115 hover:-translate-y-0.5 active:scale-95 group',
+                  style: {
+                    ...circleStyle,
+                    boxShadow: '0 2px 10px -2px rgba(0,0,0,0.5)',
+                  },
+                }
+              : {
+                  mode: 'monochrome' as const,
+                  className:
+                    'rounded-full bg-white/[0.08] hover:bg-white/[0.22] border border-white/[0.12] hover:border-white/35 backdrop-blur-md transition-all duration-200 flex items-center justify-center relative shadow-md hover:scale-110 active:scale-95 text-white/90 hover:text-white group',
+                  style: circleStyle,
+                };
 
-          if (iconStyle === 'colored_icons') {
-            // 🔮 Цветные неоновые иконки на темном стекле
-            return (
-              <a
-                key={item.id}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={item.title}
-                className="w-10 h-10 rounded-full bg-white/[0.08] hover:bg-white/[0.18] border border-white/[0.12] hover:border-white/35 backdrop-blur-md transition-all duration-200 flex items-center justify-center relative shadow-md hover:scale-115 hover:-translate-y-0.5 active:scale-95 group"
-                style={{
-                  boxShadow: `0 2px 10px -2px rgba(0,0,0,0.5)`,
-                }}
-              >
-                <BrandIcon 
-                  platform={item.platform} 
-                  mode="colored" 
-                  className="w-[22px] h-[22px] transition-transform duration-200 group-hover:scale-110" 
-                />
-                
-                {/* Тонкий тултип при наведении */}
-                <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none bg-black/90 text-white text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap z-30 shadow-xl">
-                  {item.title}
-                </span>
-              </a>
-            );
-          }
-
-          // ⚪ Монохром (минимализм)
           return (
             <a
               key={item.id}
@@ -127,14 +110,20 @@ export const SocialIconsBar: React.FC<SocialIconsBarProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               title={item.title}
-              className="w-10 h-10 rounded-full bg-white/[0.08] hover:bg-white/[0.22] border border-white/[0.12] hover:border-white/35 backdrop-blur-md transition-all duration-200 flex items-center justify-center relative shadow-md hover:scale-110 active:scale-95 text-white/90 hover:text-white group"
+              style={variantConfig.style}
+              className={variantConfig.className}
             >
-              <BrandIcon 
-                platform={item.platform} 
-                mode="monochrome" 
-                className="w-[22px] h-[22px] transition-transform duration-200 group-hover:scale-105" 
-              />
-              
+              <span
+                style={glyphWrapperStyle}
+                className="flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
+              >
+                <BrandIcon
+                  platform={item.platform}
+                  mode={variantConfig.mode}
+                  className="w-full h-full drop-shadow-sm"
+                />
+              </span>
+
               {/* Тонкий тултип при наведении */}
               <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none bg-black/90 text-white text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-md border border-white/10 whitespace-nowrap z-30 shadow-xl">
                 {item.title}

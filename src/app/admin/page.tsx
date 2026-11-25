@@ -1284,6 +1284,56 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* РЕГУЛЯТОР РАЗМЕРА ИКОНОК СОЦСЕТЕЙ */}
+            <div className="flex flex-col gap-3 p-3.5 bg-neutral-950/80 border border-neutral-800 rounded-xl">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-semibold text-neutral-200">Размер иконок соцсетей</div>
+                  <div className="text-[11px] text-neutral-400">Масштаб кружков и логотипов во всех 3 рядах</div>
+                </div>
+                <span className="text-xs font-mono font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/30 px-2 py-0.5 rounded-md">
+                  {profile.theme?.socialIconSize ?? 40} px
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={24}
+                  max={64}
+                  step={2}
+                  value={profile.theme?.socialIconSize ?? 40}
+                  onChange={(e) => handleThemeUpdate('socialIconSize', Number(e.target.value))}
+                  className="flex-1 accent-sky-500 cursor-pointer"
+                />
+                <div className="flex items-center gap-1">
+                  {[
+                    { label: 'S', size: 32 },
+                    { label: 'M', size: 40 },
+                    { label: 'L', size: 48 },
+                    { label: 'XL', size: 56 },
+                  ].map((preset) => {
+                    const active = (profile.theme?.socialIconSize ?? 40) === preset.size;
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => handleThemeUpdate('socialIconSize', preset.size)}
+                        className={`px-2 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer ${
+                          active
+                            ? 'bg-sky-500 text-white shadow-sm'
+                            : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                        }`}
+                        title={`${preset.size}px`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
             {/* Вспомогательный рендерер карточки ссылки */}
             {(() => {
               const renderSocialCard = (s: SocialLink) => {

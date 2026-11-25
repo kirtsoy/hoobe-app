@@ -141,6 +141,7 @@ export interface ProfileTheme {
   pageRadius: number;
   useUniverseBackground?: boolean; // Флаг включения ShaderGradient 06 Universe
   socialIconStyle?: SocialIconStyle; // Стиль отображения иконок (официальные бейджи по умолчанию)
+  socialIconSize?: number; // Размер иконок соцсетей в px (по умолчанию 40)
 }
 
 export interface ProfileData {
