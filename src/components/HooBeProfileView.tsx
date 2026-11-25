@@ -3,7 +3,6 @@ import { ProfileData } from '@/types/profile';
 import { ProfileShell } from './ProfileShell';
 import { SocialIconsBar } from './SocialIconsBar';
 import { BlocksGrid } from './BlocksGrid';
-import { PageFooter } from './PageFooter';
 import { UniverseGradient } from './UniverseGradient';
 
 interface HooBeProfileViewProps {
@@ -43,7 +42,7 @@ export const HooBeProfileView: React.FC<HooBeProfileViewProps> = ({ profile, isP
 
       {/* Основная карточка профиля HooBe */}
       <main 
-        className={`w-full max-w-[540px] ${
+        className={`w-full max-w-[540px] pb-8 ${
           isPreview ? 'my-0 rounded-[28px]' : 'min-h-screen sm:min-h-0 sm:my-8 sm:rounded-[32px]'
         } relative z-10 flex flex-col items-center shadow-2xl transition-all duration-300 overflow-hidden ${
           showUniverse 
@@ -75,9 +74,6 @@ export const HooBeProfileView: React.FC<HooBeProfileViewProps> = ({ profile, isP
 
         {/* Dynamic Blocks Grid */}
         <BlocksGrid blocks={profile.blocks} />
-
-        {/* Footer */}
-        <PageFooter primaryBg={showUniverse ? '#1e1b4b' : theme.primaryBg} />
       </main>
     </div>
   );
